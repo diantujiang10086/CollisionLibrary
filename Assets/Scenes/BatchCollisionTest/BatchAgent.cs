@@ -18,21 +18,20 @@ class BatchAgent : BaseBatchAgent
             new ShaderProperty { NameID = Shader.PropertyToID("_BaseColor"), Offset = 1 },
         };
     }
-    public JobHandle Update(in NativeArray<BatchTransform> transforms, in NativeArray<BatchColor> colors, JobHandle dependency)
+    public JobHandle Update(in NativeList<BatchDraw> draws, JobHandle dependency)
     {
         dependency = new UpdatevisibleJob
         {
-            count = transforms.Length,
+            count = draws.Length,
             visibleInstances = visibleInstances
         }.Schedule(instanceCountRef.Value, 64);
 
         return new UpdateBufferJob
         {
             buffer = buffer,
-            colors = colors,
-            transforms = transforms,
+            draws = draws.AsDeferredJobArray(),
             instanceCount = instanceCountRef.Value,
-        }.Schedule(transforms.Length, 64, dependency);
+        }.Schedule(draws.Length, 64, dependency);
     }
 
     [BurstCompile]
@@ -50,13 +49,13 @@ class BatchAgent : BaseBatchAgent
     struct UpdateBufferJob : IJobParallelFor
     {
         [ReadOnly] public int instanceCount;
-        [ReadOnly] public NativeArray<BatchTransform> transforms;
-        [ReadOnly] public NativeArray<BatchColor> colors;
+        [ReadOnly] public NativeArray<BatchDraw> draws;
         [NativeDisableParallelForRestriction] public NativeArray<float4> buffer;
         public void Execute(int index)
         {
-            var transform = transforms[index];
-            var color = colors[index].color;
+            var draw = draws[index];
+            var transform = draw.transform;
+            var color = draw.color.color;
 
             var pos = transform.position;
             var trs = GetTRS(new float3(pos.x, pos.y, 0), quaternion.identity, 1);

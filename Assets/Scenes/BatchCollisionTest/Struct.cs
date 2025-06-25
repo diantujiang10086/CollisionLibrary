@@ -18,3 +18,8 @@ struct BatchColor
     public int collisionCount;
     public float4 color;
 }
+struct BatchDraw
+{
+    public BatchTransform transform;
+    public BatchColor color;
+}

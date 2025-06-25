@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -137,25 +136,19 @@ public class BatchCollisionTest : MonoBehaviour
         for (int i = 0; i < batchAgents.Length; i++)
         {
             var batchAgent = batchAgents[i];
-            var transformArray = new NativeList<BatchTransform>(instanceCount, Allocator.TempJob);
-            var colorArray = new NativeList<BatchColor>(instanceCount, Allocator.TempJob);
+            var draw = new NativeList<BatchDraw>(instanceCount, Allocator.TempJob);
             var dependency = new CollectTransformAndColorJob
             {
                 shapeIndex = i,
                 elements = elements,
                 batchColors = colors,
                 batchTransforms = transforms,
-                colors = colorArray.AsParallelWriter(),
-                transforms = transformArray.AsParallelWriter()
+                draws = draw.AsParallelWriter(),
             }.Schedule(instanceCount, 64);
             dependency.Complete();
-
-            dependency = batchAgent.Update(transformArray.AsArray(), colorArray.AsArray(), dependency);
-            transformArray.Dispose(dependency);
-            colorArray.Dispose(dependency);
-
+            dependency = batchAgent.Update(draw, dependency);
+            draw.Dispose(dependency);
             dependency.Complete();
-
         }
     }
 
@@ -229,25 +222,3 @@ public class BatchCollisionTest : MonoBehaviour
     }
 }
 
-[BurstCompile]
-struct CollectTransformAndColorJob : IJobParallelFor
-{
-    [ReadOnly] public int shapeIndex;
-    [ReadOnly] public NativeArray<BatchElement> elements;
-    [ReadOnly] public NativeArray<BatchTransform> batchTransforms;
-    [ReadOnly] public NativeArray<BatchColor> batchColors;
-    public NativeList<BatchTransform>.ParallelWriter transforms;
-    public NativeList<BatchColor>.ParallelWriter colors;
-    
-    public void Execute(int index)
-    {
-        var element = elements[index];
-        var batchTransform = batchTransforms[index];
-        var batchColor = batchColors[index];
-        if(element.shapeIndex == shapeIndex)
-        {
-            transforms.AddNoResize(batchTransform);
-            colors.AddNoResize(batchColor);
-        }
-    }
-}
