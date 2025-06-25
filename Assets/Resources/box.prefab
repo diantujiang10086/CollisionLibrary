@@ -11,10 +11,10 @@ GameObject:
   - component: {fileID: 5255559378012436547}
   - component: {fileID: 7177119498473247589}
   - component: {fileID: 6530277812715187045}
-  - component: {fileID: 7938293345945112870}
   - component: {fileID: -1974488479393546280}
+  - component: {fileID: -8666337616070380434}
   m_Layer: 0
-  m_Name: Sphere
+  m_Name: box
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6d3b3ad8ac8ebda468b039a8449c54a3, type: 2}
+  - {fileID: 2100000, guid: d282a324d465de9468c01dc9c7c0e292, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -85,19 +85,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &7938293345945112870
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1430402128065882214}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c5e13c97c3315f3428b64e7c534da16d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  radius: 0.5
 --- !u!114 &-1974488479393546280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112,3 +99,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   collisionColor: {r: 0.90188676, g: 0.18304005, b: 0.15485224, a: 1}
+--- !u!114 &-8666337616070380434
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1430402128065882214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e09680d6df17ab74bb05cfb9182be3ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  size:
+    x: 1
+    y: 1

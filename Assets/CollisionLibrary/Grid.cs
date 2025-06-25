@@ -2,7 +2,7 @@
 using Unity.Mathematics;
 using UnityEngine;
 
-public delegate void BatchCollisionEvent(NativeArray<int2> collisionInfos);
+public delegate void BatchCollisionEvent(in NativeArray<int2> collisionInfos);
 
 public class Grid
 {

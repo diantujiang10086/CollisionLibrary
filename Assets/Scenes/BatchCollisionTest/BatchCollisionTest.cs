@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -15,7 +16,7 @@ public class BatchCollisionTest : MonoBehaviour
     public int cellHeight;
     public int instanceCount = 4000;
 
-    BatchAgent batchAgent;
+    BatchAgent[] batchAgents;
     float4 _defaultColor;
     float4 _collisionColor;
     NativeArray<BatchElement> elements;
@@ -40,6 +41,7 @@ public class BatchCollisionTest : MonoBehaviour
         updateCollisions = new NativeArray<UpdateCollision>(instanceCount, Allocator.Persistent);
         idToIndexs = new NativeParallelHashMap<int, int>(instanceCount, Allocator.Persistent);
 
+        batchAgents = new BatchAgent[prefabs.Length];
         for (int i = 0; i < prefabs.Length; i++)
         {
             var prefab = prefabs[i];
@@ -47,14 +49,13 @@ public class BatchCollisionTest : MonoBehaviour
             var shapeProxy = collisionShape.CreateShapeProxy();
             shapeProxies.Add(shapeProxy);
             Grid.RegisterShapeProxy(i, shapeProxy);
+            batchAgents[i] = BRGSystem.CreateBatchAgent<BatchAgent>(prefab, instanceCount);
+            batchAgents[i].Initialize(instanceCount);
         }
     }
 
     private void Start()
     {
-        batchAgent = BRGSystem.CreateBatchAgent<BatchAgent>(prefabs[0], instanceCount);
-        batchAgent.Initialize(instanceCount);
-
         int totalId = 10000;
 
         NativeArray<AddCollision> addCollisions = new NativeArray<AddCollision>(instanceCount, Allocator.Temp);
@@ -65,7 +66,7 @@ public class BatchCollisionTest : MonoBehaviour
             var element = new BatchElement
             {
                 id = id,
-                shapeIndex = 0
+                shapeIndex = UnityEngine.Random.Range(0, shapeProxies.Count)
             };
 
             var batchTransform = new BatchTransform 
@@ -103,7 +104,10 @@ public class BatchCollisionTest : MonoBehaviour
         {
             shape.Dispose();
         }
-        batchAgent.Dispose();
+        foreach(var batchAgent in batchAgents)
+        {
+            batchAgent.Dispose();
+        }
         transforms.Dispose();
         colors.Dispose();
         randoms.Dispose();
@@ -130,11 +134,43 @@ public class BatchCollisionTest : MonoBehaviour
 
     private void Update()
     {
-        batchAgent.Update(transforms, colors);
+        for (int i = 0; i < batchAgents.Length; i++)
+        {
+            var batchAgent = batchAgents[i];
+            var transformArray = new NativeList<BatchTransform>(instanceCount, Allocator.TempJob);
+            var colorArray = new NativeList<BatchColor>(instanceCount, Allocator.TempJob);
+            var dependency = new CollectTransformAndColorJob
+            {
+                shapeIndex = i,
+                elements = elements,
+                batchColors = colors,
+                batchTransforms = transforms,
+                colors = colorArray.AsParallelWriter(),
+                transforms = transformArray.AsParallelWriter()
+            }.Schedule(instanceCount, 64);
+            dependency.Complete();
+
+            dependency = batchAgent.Update(transformArray.AsArray(), colorArray.AsArray(), dependency);
+            transformArray.Dispose(dependency);
+            colorArray.Dispose(dependency);
+
+            dependency.Complete();
+
+        }
     }
 
 
-    private void OnBatchCollisionExit(NativeArray<int2> collisionInfos)
+    private void OnBatchCollisionExit(in NativeArray<int2> collisionInfos)
+    {
+        HandleCollision(collisionInfos, -1);
+    }
+
+    void OnBatchCollisionEnter(in NativeArray<int2> collisionInfos)
+    {
+        HandleCollision(collisionInfos, 1);
+    }
+
+    private void HandleCollision(in NativeArray<int2> collisionInfos, int value)
     {
         var collisionIndexCounts = new NativeList<int2>(collisionInfos.Length * 2, Allocator.TempJob);
         var indexMap = new NativeParallelMultiHashMap<int, int>(collisionInfos.Length * 2, Allocator.TempJob);
@@ -149,7 +185,7 @@ public class BatchCollisionTest : MonoBehaviour
 
         Dependency = new CountIndexJob
         {
-            addValue = -1,
+            addValue = value,
             hash = hash,
             indexMap = indexMap,
             collisionIndexCounts = collisionIndexCounts,
@@ -166,41 +202,6 @@ public class BatchCollisionTest : MonoBehaviour
         }.Schedule(collisionIndexCounts, 64, Dependency);
         collisionIndexCounts.Dispose(Dependency);
         Dependency.Complete();
-    }
-
-    void OnBatchCollisionEnter(NativeArray<int2> collisionInfos)
-    {
-        var collisionIndexCounts = new NativeList<int2>(collisionInfos.Length * 2, Allocator.TempJob);
-        var indexMap = new NativeParallelMultiHashMap<int,int>(collisionInfos.Length*2, Allocator.TempJob);
-        var hash = new NativeParallelHashSet<int>(collisionInfos.Length*2, Allocator.TempJob);
-        var Dependency = new CollectJob
-        {
-            idToIndexs = idToIndexs,
-            collisionInfos = collisionInfos,
-            hash = hash.AsParallelWriter(),
-            indexMap = indexMap.AsParallelWriter(),
-        }.Schedule(collisionInfos.Length, 64);
-        
-        Dependency = new CountIndexJob
-        {
-            addValue = 1,
-            hash = hash,
-            indexMap = indexMap,
-            collisionIndexCounts = collisionIndexCounts,
-        }.Schedule(Dependency);
-        indexMap.Dispose(Dependency);
-        hash.Dispose(Dependency);
-        Dependency.Complete();
-        Dependency = new UpdateColorJob
-        {
-            colors = colors,
-            defaultColor = _defaultColor,
-            collisionColor = _collisionColor,
-            collisionIndexCounts = collisionIndexCounts.AsDeferredJobArray(),
-        }.Schedule(collisionIndexCounts, 64, Dependency);
-        collisionIndexCounts.Dispose(Dependency);
-        Dependency.Complete();
-
     }
 
     private void OnDrawGizmos()
@@ -225,8 +226,28 @@ public class BatchCollisionTest : MonoBehaviour
             Vector3 end = origin + new Vector3(xPos, rows * cellHeight, 0);
             Gizmos.DrawLine(start, end);
         }
-
     }
 }
 
-
+[BurstCompile]
+struct CollectTransformAndColorJob : IJobParallelFor
+{
+    [ReadOnly] public int shapeIndex;
+    [ReadOnly] public NativeArray<BatchElement> elements;
+    [ReadOnly] public NativeArray<BatchTransform> batchTransforms;
+    [ReadOnly] public NativeArray<BatchColor> batchColors;
+    public NativeList<BatchTransform>.ParallelWriter transforms;
+    public NativeList<BatchColor>.ParallelWriter colors;
+    
+    public void Execute(int index)
+    {
+        var element = elements[index];
+        var batchTransform = batchTransforms[index];
+        var batchColor = batchColors[index];
+        if(element.shapeIndex == shapeIndex)
+        {
+            transforms.AddNoResize(batchTransform);
+            colors.AddNoResize(batchColor);
+        }
+    }
+}

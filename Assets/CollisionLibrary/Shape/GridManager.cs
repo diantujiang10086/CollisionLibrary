@@ -126,7 +126,7 @@ internal class GridManager : MonoBehaviour
         Grid.WriteUpdateCollision(updateCollisions.AsArray());
     }
 
-    public void BatchCollisionsExit(NativeArray<int2> collisions)
+    public void BatchCollisionsExit(in NativeArray<int2> collisions)
     {
         foreach (var collision in collisions)
         {
@@ -144,7 +144,7 @@ internal class GridManager : MonoBehaviour
         }
     }
 
-    public void BatchCollisionsStay(NativeArray<int2> collisions)
+    public void BatchCollisionsStay(in NativeArray<int2> collisions)
     {
         foreach (var collision in collisions)
         {
@@ -162,7 +162,7 @@ internal class GridManager : MonoBehaviour
         }
     }
 
-    public void BatchCollisionsEnter(NativeArray<int2> collisions)
+    public void BatchCollisionsEnter(in NativeArray<int2> collisions)
     {
         foreach (var collision in collisions)
         {

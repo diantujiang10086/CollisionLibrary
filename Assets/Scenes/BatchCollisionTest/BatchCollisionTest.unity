@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 483687402}
   - component: {fileID: 483687401}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: FPSDisplay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -200,11 +200,12 @@ MonoBehaviour:
   collisionColor: {r: 0, g: 0.9942422, b: 1, a: 1}
   prefabs:
   - {fileID: 1430402128065882214, guid: 1689960271dbb9547a1430834d782702, type: 3}
+  - {fileID: 1430402128065882214, guid: d3b6fb54305da584490d9d6fe9d7abec, type: 3}
   width: 128
   height: 72
   cellWidth: 4
   cellHeight: 4
-  instanceCount: 1000
+  instanceCount: 4000
 --- !u!4 &781916858
 Transform:
   m_ObjectHideFlags: 0

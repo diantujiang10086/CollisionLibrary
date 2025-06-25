@@ -8,10 +8,6 @@ class BatchAgent : BaseBatchAgent
 {
     public void Initialize(int count)
     {
-        for (int i = 0; i < count; i++)
-        {
-            visibleInstances[i] = true;
-        }
         SetInstanceCount(count);
     }
     public override ShaderProperty[] GetShaderProperties()
@@ -22,15 +18,32 @@ class BatchAgent : BaseBatchAgent
             new ShaderProperty { NameID = Shader.PropertyToID("_BaseColor"), Offset = 1 },
         };
     }
-    public void Update(in NativeArray<BatchTransform> transforms, in NativeArray<BatchColor> colors)
+    public JobHandle Update(in NativeArray<BatchTransform> transforms, in NativeArray<BatchColor> colors, JobHandle dependency)
     {
-        new UpdateBufferJob
+        dependency = new UpdatevisibleJob
+        {
+            count = transforms.Length,
+            visibleInstances = visibleInstances
+        }.Schedule(instanceCountRef.Value, 64);
+
+        return new UpdateBufferJob
         {
             buffer = buffer,
             colors = colors,
             transforms = transforms,
             instanceCount = instanceCountRef.Value,
-        }.Schedule(instanceCountRef.Value, 64).Complete();
+        }.Schedule(transforms.Length, 64, dependency);
+    }
+
+    [BurstCompile]
+    struct UpdatevisibleJob : IJobParallelFor
+    {
+        public int count;
+        [NativeDisableParallelForRestriction] public NativeArray<bool> visibleInstances;
+        public void Execute(int index)
+        {
+            visibleInstances[index] = index < count;
+        }
     }
 
     [BurstCompile]
