@@ -111,6 +111,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e09680d6df17ab74bb05cfb9182be3ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  collisionMask: -1
   size:
     x: 1
     y: 1

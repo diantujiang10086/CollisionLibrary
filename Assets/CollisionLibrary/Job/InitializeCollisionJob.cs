@@ -38,7 +38,9 @@ struct InitializeCollisionJob : IJobParallelFor
             isStatic = addCollision.isStatic,
             isCalculateAABB = isCalculateAABB,
             isUpdateRotation = isUpdateRotation,
-            localCorners = localCorners
+            localCorners = localCorners,
+            layer = addCollision.layer,
+            collisionMask = addCollision.collisionMask
         };
 
         var transform = new Transform2D { position = addCollision.position, angle = addCollision.angle };

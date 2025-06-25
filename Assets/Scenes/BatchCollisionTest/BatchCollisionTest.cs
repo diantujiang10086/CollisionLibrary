@@ -25,6 +25,7 @@ public class BatchCollisionTest : MonoBehaviour
     NativeArray<UpdateCollision> updateCollisions;
     NativeParallelHashMap<int, int> idToIndexs;
     List<ShapeProxy> shapeProxies = new List<ShapeProxy>();
+    List<int2> layers = new List<int2>();
     private void Awake()
     {
         _defaultColor = new float4(defaultColor.r, defaultColor.g, defaultColor.b, defaultColor.a);
@@ -50,6 +51,7 @@ public class BatchCollisionTest : MonoBehaviour
             Grid.RegisterShapeProxy(i, shapeProxy);
             batchAgents[i] = BRGSystem.CreateBatchAgent<BatchAgent>(prefab, instanceCount);
             batchAgents[i].Initialize(instanceCount);
+            layers.Add(new int2(prefab.layer, collisionShape.collisionMask));
         }
     }
 
@@ -80,10 +82,13 @@ public class BatchCollisionTest : MonoBehaviour
                 color = _defaultColor,
             };
 
+            var layer = layers[element.shapeIndex];
             addCollisions[i] = new AddCollision
             {
                 id = element.id,
-                shapeIndex = 0,
+                layer = layer.x,
+                collisionMask = layer.y,
+                shapeIndex = element.shapeIndex,
                 position = batchTransform.position,
             };
 

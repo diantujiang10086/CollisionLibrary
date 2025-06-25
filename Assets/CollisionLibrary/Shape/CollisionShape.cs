@@ -2,6 +2,7 @@
 
 public class CollisionShape : MonoBehaviour
 {
+    public int collisionMask = -1;
     protected int id;
     protected Color drawColor = Color.white;
     protected UpdateCollision updateCollision;
@@ -48,11 +49,13 @@ public class CollisionShape : MonoBehaviour
         var pos = transform.position;
         return new AddCollision
         {
-            isCreated = true,
             id = id,
-            position = new Unity.Mathematics.float2(pos.x, pos.y),
+            isCreated = true,
+            layer = gameObject.layer,
+            collisionMask = collisionMask,
             isStatic = gameObject.isStatic,
             angle = transform.eulerAngles.z,
+            position = new Unity.Mathematics.float2(pos.x, pos.y),
         };
     }
 

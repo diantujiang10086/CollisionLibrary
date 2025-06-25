@@ -40,6 +40,11 @@ struct CollisionPairTestJob : IJobParallelFor
                 var bIndex = array[j];
                 var b = collisions[bIndex];
 
+                bool aHitsB = (a.collisionMask & (1 << b.layer)) != 0;
+                bool bHitsA = (b.collisionMask & (1 << a.layer)) != 0;
+                if (!aHitsB && !bHitsA)
+                    continue;
+
                 var bWorldAABB = worldAABBs[bIndex];
                 if (TestOverlap(aWorldAABB, bWorldAABB))
                 {
