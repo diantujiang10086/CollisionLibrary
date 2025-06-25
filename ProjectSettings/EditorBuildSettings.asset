@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/BatchCollisionTest/BatchCollisionTest.unity
+    guid: 0f6c2dead72d47f43be5b0bdb7d630a5
   m_configObjects: {}
