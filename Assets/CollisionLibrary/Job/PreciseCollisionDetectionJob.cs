@@ -38,6 +38,16 @@ struct PreciseCollisionDetectionJob : IJobParallelForDefer
 
     public static bool TestOverlap(in ShapeProxy shapeA, in ShapeProxy shapeB, in ShapeWorldVertex vertexA, in ShapeWorldVertex vertexB)
     {
+        if(shapeA.type == ShapeType.Circle && shapeB.type == ShapeType.Circle)
+        {
+            float2 centerA = vertexA.points[0];
+            float2 centerB = vertexB.points[0];
+
+            float radiusSum = shapeA.radius + shapeB.radius;
+            float2 diff = centerA - centerB;
+
+            return math.lengthsq(diff) <= radiusSum * radiusSum;
+        }
         bool isCircleA = shapeA.count == 0;
         bool isConvexA = shapeA.count == -1;
 
