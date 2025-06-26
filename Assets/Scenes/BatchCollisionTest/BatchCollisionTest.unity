@@ -177,6 +177,7 @@ GameObject:
   m_Component:
   - component: {fileID: 781916858}
   - component: {fileID: 781916857}
+  - component: {fileID: 781916859}
   m_Layer: 0
   m_Name: BatchCollisionTest
   m_TagString: Untagged
@@ -199,13 +200,14 @@ MonoBehaviour:
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   collisionColor: {r: 0, g: 0.9942422, b: 1, a: 1}
   prefabs:
-  - {fileID: 1430402128065882214, guid: 1689960271dbb9547a1430834d782702, type: 3}
   - {fileID: 1430402128065882214, guid: d3b6fb54305da584490d9d6fe9d7abec, type: 3}
+  - {fileID: 1430402128065882214, guid: 1689960271dbb9547a1430834d782702, type: 3}
   width: 128
   height: 72
   cellWidth: 4
   cellHeight: 4
   instanceCount: 4000
+  batchDrawTest: {fileID: 781916859}
 --- !u!4 &781916858
 Transform:
   m_ObjectHideFlags: 0
@@ -221,6 +223,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &781916859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 781916856}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 415a6e4693d08674fa530067c94bcbac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  instanceCount: 4000
 --- !u!1 &1045186967
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -14,8 +15,8 @@ public class BatchCollisionTest : MonoBehaviour
     public int cellWidth;
     public int cellHeight;
     public int instanceCount = 4000;
+    public BatchDrawTest batchDrawTest;
 
-    BatchAgent[] batchAgents;
     float4 _defaultColor;
     float4 _collisionColor;
     NativeArray<BatchElement> elements;
@@ -41,7 +42,7 @@ public class BatchCollisionTest : MonoBehaviour
         updateCollisions = new NativeArray<UpdateCollision>(instanceCount, Allocator.Persistent);
         idToIndexs = new NativeParallelHashMap<int, int>(instanceCount, Allocator.Persistent);
 
-        batchAgents = new BatchAgent[prefabs.Length];
+        batchDrawTest.Set(prefabs, elements, transforms, colors);
         for (int i = 0; i < prefabs.Length; i++)
         {
             var prefab = prefabs[i];
@@ -49,8 +50,6 @@ public class BatchCollisionTest : MonoBehaviour
             var shapeProxy = collisionShape.CreateShapeProxy();
             shapeProxies.Add(shapeProxy);
             Grid.RegisterShapeProxy(i, shapeProxy);
-            batchAgents[i] = BRGSystem.CreateBatchAgent<BatchAgent>(prefab, instanceCount);
-            batchAgents[i].Initialize(instanceCount);
             layers.Add(new int2(prefab.layer, collisionShape.collisionMask));
         }
     }
@@ -108,10 +107,6 @@ public class BatchCollisionTest : MonoBehaviour
         {
             shape.Dispose();
         }
-        foreach(var batchAgent in batchAgents)
-        {
-            batchAgent.Dispose();
-        }
         transforms.Dispose();
         colors.Dispose();
         randoms.Dispose();
@@ -135,28 +130,6 @@ public class BatchCollisionTest : MonoBehaviour
 
         Grid.WriteUpdateCollision(updateCollisions);
     }
-
-    private void Update()
-    {
-        for (int i = 0; i < batchAgents.Length; i++)
-        {
-            var batchAgent = batchAgents[i];
-            var draw = new NativeList<BatchDraw>(instanceCount, Allocator.TempJob);
-            var dependency = new CollectTransformAndColorJob
-            {
-                shapeIndex = i,
-                elements = elements,
-                batchColors = colors,
-                batchTransforms = transforms,
-                draws = draw.AsParallelWriter(),
-            }.Schedule(instanceCount, 64);
-            dependency.Complete();
-            dependency = batchAgent.Update(draw, dependency);
-            draw.Dispose(dependency);
-            dependency.Complete();
-        }
-    }
-
 
     private void OnBatchCollisionExit(in NativeArray<int2> collisionInfos)
     {
@@ -226,4 +199,3 @@ public class BatchCollisionTest : MonoBehaviour
         }
     }
 }
-
