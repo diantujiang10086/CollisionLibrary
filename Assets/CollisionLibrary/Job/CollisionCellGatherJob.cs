@@ -4,7 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 
 [BurstCompile]
-struct CollisionCellGatherJob : IJobParallelFor
+struct CollisionCellGatherJob : IJobParallelForDefer
 {
     [ReadOnly] public NativeArray<int2> allCells;
     [ReadOnly] public NativeParallelMultiHashMap<int2, int> dynamicMap;

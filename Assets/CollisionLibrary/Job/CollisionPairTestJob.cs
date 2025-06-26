@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using static AABB;
 
 [BurstCompile]
-struct CollisionPairTestJob : IJobParallelFor
+struct CollisionPairTestJob : IJobParallelForDefer
 {
     [ReadOnly] public NativeArray<int2> allCells;
     [ReadOnly] public NativeArray<GridCollision> collisions;

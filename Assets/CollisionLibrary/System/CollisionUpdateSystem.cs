@@ -4,7 +4,7 @@ using Unity.Mathematics;
 
 public partial class CollisionRegistrySystem
 {
-    private void UpdateCollision(NativeParallelMultiHashMap<int2, int> map)
+    private void UpdateCollision(in NativeStream stream)
     {
         Grid.updateCollisions.SwapBuffer();
 
@@ -39,7 +39,6 @@ public partial class CollisionRegistrySystem
         }.Schedule(indexs.Length, 16, Dependency);
         indexs.Dispose(Dependency);
 
-        var stream = new NativeStream(Grid.capacity, Allocator.TempJob);
         Dependency = new GridRangeWriteJob
         {
             invCellSize = Grid.invCell,
@@ -56,13 +55,5 @@ public partial class CollisionRegistrySystem
             gridCollisions = Grid.gridCollisions.AsDeferredJobArray(),
             transforms = Grid.collisionTransforms.AsDeferredJobArray(),
         }.Schedule(Grid.gridCollisions, 8, Dependency);
-
-        Dependency = new StreamToMapJob
-        {
-            reader = stream.AsReader(),
-            map = map.AsParallelWriter(),
-            gridCollisions = Grid.gridCollisions.AsDeferredJobArray(),
-        }.Schedule(Grid.gridCollisions, 16, Dependency);
-        stream.Dispose(Dependency);
     }
 }

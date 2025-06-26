@@ -5,27 +5,26 @@ using Unity.Mathematics;
 
 public partial class CollisionRegistrySystem
 {
-    private void CollisionEvent(in NativeParallelMultiHashMap<int2, int> dynamicMap)
+    private void CollisionEvent(in NativeParallelMultiHashMap<int2, int> dynamicMap, in NativeList<int2> allCells)
     {
-        var allCells = CollectAllCells(dynamicMap);
-
+        Dependency.Complete();
         var cellCollisions = new NativeStream(Grid.capacity, Allocator.TempJob);
         Dependency = new CollisionCellGatherJob
         {
-            allCells = allCells,
+            allCells = allCells.AsDeferredJobArray(),
             cellCollisions = cellCollisions.AsWriter(),
             dynamicMap = dynamicMap
-        }.Schedule(allCells.Length, 32, Dependency);
+        }.Schedule(allCells, 32, Dependency);
 
         NativeList<int2> collisionDetectionDatas = new NativeList<int2>(Grid.capacity*4, Allocator.TempJob);
         Dependency = new CollisionPairTestJob
         {
-            allCells = allCells,
+            allCells = allCells.AsDeferredJobArray(),
             cellCollisions = cellCollisions.AsReader(),
             worldAABBs = Grid.worldAABBs.AsDeferredJobArray(),
             collisions = Grid.gridCollisions.AsDeferredJobArray(),
             collisionIndexs = collisionDetectionDatas.AsParallelWriter(),
-        }.Schedule(allCells.Length, 16, Dependency);
+        }.Schedule(allCells, 16, Dependency);
         allCells.Dispose(Dependency);
         cellCollisions.Dispose(Dependency);
 
@@ -41,35 +40,6 @@ public partial class CollisionRegistrySystem
         
 
         ProcessEvent();
-    }
-
-    private NativeArray<int2> CollectAllCells(in NativeParallelMultiHashMap<int2, int> dynamicMap)
-    {
-        NativeList<int2> array = new NativeList<int2>(Allocator.TempJob);
-        Dependency = new CollectCellJob
-        {
-            map = dynamicMap,
-            array = array
-        }.Schedule(Dependency);
-
-        NativeParallelHashSet<int2> hash = new NativeParallelHashSet<int2>(Grid.capacity, Allocator.TempJob);
-        Dependency = new ListDeduplicationJob<int2>
-        {
-            array = array.AsDeferredJobArray(),
-            hash = hash.AsParallelWriter()
-        }.Schedule(array, 16, Dependency);
-        array.Dispose(Dependency);
-        Dependency.Complete();
-
-        NativeArray<int2> allCells = new NativeArray<int2>(hash.Count(), Allocator.TempJob);
-        Dependency = new HashToArrayJob<int2>
-        {
-            hash = hash,
-            array = allCells
-        }.Schedule(Dependency);
-        hash.Dispose(Dependency);
-        
-        return allCells;
     }
 
     private  void ProcessEvent()
