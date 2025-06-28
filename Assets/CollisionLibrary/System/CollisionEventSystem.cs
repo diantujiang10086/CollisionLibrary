@@ -81,12 +81,6 @@ public partial class CollisionRegistrySystem
         lastCollisionArray.Dispose(Dependency);
 
         Dependency.Complete();
-
-        var collisions = Grid.collisions;
-        var exitCollisions = Grid.exitCollisions;
-        var enterCollisions = Grid.exitCollisions;
-        var stayCollisions = Grid.exitCollisions;
-
         Test();
 
     }
@@ -95,8 +89,8 @@ public partial class CollisionRegistrySystem
     {
         var collisions = Grid.collisions;
         var exitCollisions = Grid.exitCollisions;
-        var enterCollisions = Grid.exitCollisions;
-        var stayCollisions = Grid.exitCollisions;
+        var enterCollisions = Grid.enterCollisions;
+        var stayCollisions = Grid.stayCollisions;
 
         Grid.collisionExit?.Invoke(exitCollisions.AsArray());
         Grid.collisionEnter?.Invoke(enterCollisions.AsArray());
