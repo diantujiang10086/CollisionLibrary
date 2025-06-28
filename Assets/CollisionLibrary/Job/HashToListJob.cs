@@ -4,7 +4,7 @@ using Unity.Collections;
 using Unity.Jobs;
 
 [BurstCompile]
-struct HashToList<T> : IJob where T : unmanaged, IEquatable<T>
+struct HashToListJob<T> : IJob where T : unmanaged, IEquatable<T>
 {
     [ReadOnly] public NativeParallelHashSet<T> hash;
     [NativeDisableParallelForRestriction] public NativeList<T> list;

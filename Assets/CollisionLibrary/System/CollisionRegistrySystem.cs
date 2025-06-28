@@ -32,7 +32,7 @@ public partial class CollisionRegistrySystem : SystemBase
             gridCollisions = Grid.gridCollisions.AsDeferredJobArray(),
         }.Schedule(Grid.gridCollisions, 16, Dependency);
 
-        Dependency = new HashToList<int2>
+        Dependency = new HashToListJob<int2>
         {
             hash = mapKeys,
             list = allCells,

@@ -5,7 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 
 [BurstCompile]
-struct CalculateEnterAndStayEventJob : IJobParallelFor
+struct CalculateEnterAndStayEventJob : IJobParallelForDefer
 {
     [ReadOnly] public NativeArray<int2> collisions;
     [ReadOnly] public NativeParallelHashSet<int2> lastCollisions;

@@ -1,5 +1,6 @@
 
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -7,7 +8,6 @@ public partial class CollisionRegistrySystem
 {
     private void CollisionEvent(in NativeParallelMultiHashMap<int2, int> dynamicMap, in NativeList<int2> allCells)
     {
-        Dependency.Complete();
         var cellCollisions = new NativeStream(Grid.capacity, Allocator.TempJob);
         Dependency = new CollisionCellGatherJob
         {
@@ -44,57 +44,68 @@ public partial class CollisionRegistrySystem
 
     private  void ProcessEvent()
     {
-        Dependency.Complete();
-        var collisionArray = new NativeArray<int2>(Grid.collisions.Count(), Allocator.TempJob);
-        var lastCollisionArray = new NativeArray<int2>(Grid.lastCollisions.Count(), Allocator.TempJob);
+        var collisionArray = new NativeList<int2>(Grid.capacity, Allocator.TempJob);
+        var lastCollisionArray = new NativeList<int2>(Grid.capacity, Allocator.TempJob);
 
-        var collisionArrayJob = new HashToArrayJob<int2>
+        var collisionArrayJob = new HashToListJob<int2>
         {
             hash = Grid.collisions,
-            array = collisionArray,
+            list = collisionArray,
         }.Schedule(Dependency);
 
-        var lastCollisionArrayJob = new HashToArrayJob<int2>
+        var lastCollisionArrayJob = new HashToListJob<int2>
         {
             hash = Grid.lastCollisions,
-            array = lastCollisionArray
+            list = lastCollisionArray
         }.Schedule(Dependency);
 
         Dependency = JobHandle.CombineDependencies(collisionArrayJob, lastCollisionArrayJob);
 
         var calculateEnterAndStayEventJob = new CalculateEnterAndStayEventJob
         {
-            collisions = collisionArray,
+            collisions = collisionArray.AsDeferredJobArray(),
             lastCollisions = Grid.lastCollisions,
             enterCollisions = Grid.enterCollisions.AsParallelWriter(),
             stayCollisions = Grid.stayCollisions.AsParallelWriter()
-        }.Schedule(collisionArray.Length, 8, Dependency);
+        }.Schedule(collisionArray, 8, Dependency);
 
         var calculateExitEventJob = new CalculateExitEventJob
         {
-            lastCollisions = lastCollisionArray,
+            lastCollisions = lastCollisionArray.AsDeferredJobArray(),
             collisions = Grid.collisions,
             exitCollisions = Grid.exitCollisions.AsParallelWriter()
-        }.Schedule(lastCollisionArray.Length, 16, Dependency);
+        }.Schedule(lastCollisionArray, 16, Dependency);
 
         Dependency = JobHandle.CombineDependencies(calculateEnterAndStayEventJob, calculateExitEventJob);
-
-        if (collisionArray.IsCreated)
-            collisionArray.Dispose(Dependency);
-
-        if (lastCollisionArray.IsCreated)
-            lastCollisionArray.Dispose(Dependency);
+        collisionArray.Dispose(Dependency);
+        lastCollisionArray.Dispose(Dependency);
 
         Dependency.Complete();
 
-        Grid.collisionExit?.Invoke(Grid.exitCollisions.AsArray());
-        Grid.collisionEnter?.Invoke(Grid.enterCollisions.AsArray());
-        Grid.collisionStay?.Invoke(Grid.stayCollisions.AsArray());
+        var collisions = Grid.collisions;
+        var exitCollisions = Grid.exitCollisions;
+        var enterCollisions = Grid.exitCollisions;
+        var stayCollisions = Grid.exitCollisions;
+
+        Test();
+
+    }
+
+    private static void Test()
+    {
+        var collisions = Grid.collisions;
+        var exitCollisions = Grid.exitCollisions;
+        var enterCollisions = Grid.exitCollisions;
+        var stayCollisions = Grid.exitCollisions;
+
+        Grid.collisionExit?.Invoke(exitCollisions.AsArray());
+        Grid.collisionEnter?.Invoke(enterCollisions.AsArray());
+        Grid.collisionStay?.Invoke(stayCollisions.AsArray());
 
         (Grid.lastCollisions, Grid.collisions) = (Grid.collisions, Grid.lastCollisions);
         Grid.collisions.Clear();
-        Grid.enterCollisions.Clear();
-        Grid.stayCollisions.Clear();
-        Grid.exitCollisions.Clear();
+        enterCollisions.Clear();
+        stayCollisions.Clear();
+        exitCollisions.Clear();
     }
 }
