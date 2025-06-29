@@ -1,4 +1,3 @@
-
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -77,29 +76,60 @@ public partial class CollisionRegistrySystem
         }.Schedule(lastCollisionArray, 16, Dependency);
 
         Dependency = JobHandle.CombineDependencies(calculateEnterAndStayEventJob, calculateExitEventJob);
-        collisionArray.Dispose(Dependency);
         lastCollisionArray.Dispose(Dependency);
 
-        Dependency.Complete();
-        Test();
+        var lastCollisionClearJob = new HashClearJob<int2>
+        {
+            set = Grid.lastCollisions
+        }.Schedule(Dependency);
 
-    }
+        var arrayToSetJob = new ArrayToSetJob<int2> 
+        { 
+             array = collisionArray.AsDeferredJobArray(),
+             result = Grid.lastCollisions.AsParallelWriter()
+        }.Schedule(collisionArray, 16 , lastCollisionClearJob);
 
-    private static void Test()
-    {
-        var collisions = Grid.collisions;
-        var exitCollisions = Grid.exitCollisions;
-        var enterCollisions = Grid.enterCollisions;
-        var stayCollisions = Grid.stayCollisions;
+        var collisionClearJob = new HashClearJob<int2>
+        {
+            set = Grid.collisions
+        }.Schedule(Dependency);
 
-        Grid.collisionExit?.Invoke(exitCollisions.AsArray());
-        Grid.collisionEnter?.Invoke(enterCollisions.AsArray());
-        Grid.collisionStay?.Invoke(stayCollisions.AsArray());
+        var enterJob = new CollisionEventJob<CollisionEventUpdate>
+        {
+            list = Grid.enterCollisions,
+            jobData = Grid.enterUpdate
+        }.Schedule(Grid.enterCollisions, 16, Dependency);
 
-        (Grid.lastCollisions, Grid.collisions) = (Grid.collisions, Grid.lastCollisions);
-        Grid.collisions.Clear();
-        enterCollisions.Clear();
-        stayCollisions.Clear();
-        exitCollisions.Clear();
+        var exitJob = new CollisionEventJob<CollisionEventUpdate>
+        {
+            list = Grid.exitCollisions,
+            jobData = Grid.exitUpdate
+        }.Schedule(Grid.exitCollisions, 16, Dependency);
+
+        var stayJob = new CollisionEventJob<CollisionEventUpdate>
+        {
+            list = Grid.stayCollisions,
+            jobData = Grid.stayUpdate
+        }.Schedule(Grid.stayCollisions, 16, Dependency);
+
+
+        NativeArray<JobHandle> allHandles = new NativeArray<JobHandle>(5, Allocator.TempJob);
+        allHandles[0] = arrayToSetJob;
+        allHandles[1] = collisionClearJob;
+        allHandles[2] = enterJob;
+        allHandles[3] = exitJob;
+        allHandles[4] = stayJob;
+
+        Dependency = JobHandle.CombineDependencies(allHandles);
+        Dependency = new CollisionEventClearJob
+        {
+            enter = Grid.enterCollisions,
+            exit = Grid.exitCollisions,
+            stay = Grid.stayCollisions
+        }.Schedule(Dependency);
+
+        collisionArray.Dispose(Dependency);
+        allHandles.Dispose(Dependency);
     }
 }
+

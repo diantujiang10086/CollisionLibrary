@@ -18,3 +18,4 @@ struct UpdateWorldVertexJob : IJobParallelForDefer
         worldVertexs[index].Compute(transform, shapeProxy);
     }
 }
+

@@ -1,6 +1,5 @@
 ﻿using Unity.Collections;
 using Unity.Mathematics;
-using UnityEngine;
 
 public delegate void BatchCollisionEvent(in NativeArray<int2> collisionInfos);
 
@@ -12,12 +11,16 @@ public class Grid
     internal static int2 sceneSize;
     internal static float2 invCell;
 
+    internal static CollisionEventUpdate enterUpdate;
+    internal static CollisionEventUpdate exitUpdate;
+    internal static CollisionEventUpdate stayUpdate;
+
     internal static BatchCollisionEvent collisionEnter;
     internal static BatchCollisionEvent collisionExit;
     internal static BatchCollisionEvent collisionStay;
 
-    internal static NativeParallelHashSet<int2> collisions = new NativeParallelHashSet<int2>(capacity*2, Allocator.Persistent);
-    internal static NativeParallelHashSet<int2> lastCollisions = new NativeParallelHashSet<int2>(capacity*2, Allocator.Persistent);
+    internal static NativeParallelHashSet<int2> collisions = new NativeParallelHashSet<int2>(capacity * 2, Allocator.Persistent);
+    internal static NativeParallelHashSet<int2> lastCollisions = new NativeParallelHashSet<int2>(capacity * 2, Allocator.Persistent);
     internal static NativeList<int2> enterCollisions = new NativeList<int2>(capacity, Allocator.Persistent);
     internal static NativeList<int2> stayCollisions = new NativeList<int2>(capacity, Allocator.Persistent);
     internal static NativeList<int2> exitCollisions = new NativeList<int2>(capacity, Allocator.Persistent);
@@ -35,9 +38,9 @@ public class Grid
     internal static DoubleBufferedMultiHashMap<int2, int> staticMap = new DoubleBufferedMultiHashMap<int2, int>(capacity, Allocator.Persistent);
     internal static DoubleBufferedMultiHashMap<int2, int> dynamicMap = new DoubleBufferedMultiHashMap<int2, int>(capacity, Allocator.Persistent);
 
-    internal static DoubleArrayBuffer<AddCollision> addCollisions = new DoubleArrayBuffer<AddCollision>(capacity);
-    internal static DoubleArrayBuffer<UpdateCollision> updateCollisions = new DoubleArrayBuffer<UpdateCollision>(capacity);
-    internal static DoubleArrayBuffer<RemoveCollision> removeCollisions = new DoubleArrayBuffer<RemoveCollision>(capacity);
+    internal static DoubleListBuffer<AddCollision> addCollisions = new DoubleListBuffer<AddCollision>(capacity);
+    internal static DoubleListBuffer<UpdateCollision> updateCollisions = new DoubleListBuffer<UpdateCollision>(capacity);
+    internal static DoubleListBuffer<RemoveCollision> removeCollisions = new DoubleListBuffer<RemoveCollision>(capacity);
 
     public static void Initialize(int width, int height, float cellWidth, float cellHeight)
     {
@@ -65,7 +68,7 @@ public class Grid
 
     public static void RegisterShapeProxy(int key, in ShapeProxy shapeProxy)
     {
-        var index =  shapeProxies.Length;
+        var index = shapeProxies.Length;
         shapeProxies.Add(shapeProxy);
         shapeProxyMap[key] = index;
     }
@@ -137,7 +140,7 @@ public class Grid
 
     public static void Dispose()
     {
-        foreach(var worldVertex in worldVertexs)
+        foreach (var worldVertex in worldVertexs)
         {
             worldVertex.Dispose();
         }

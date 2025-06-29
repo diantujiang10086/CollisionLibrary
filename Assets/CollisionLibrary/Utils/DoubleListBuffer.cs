@@ -1,13 +1,13 @@
 ﻿using System;
 using Unity.Collections;
 
-internal struct DoubleArrayBuffer<T>: IDisposable where T: unmanaged
+internal struct DoubleListBuffer<T>: IDisposable where T: unmanaged
 {
     private bool useWriteBuffer;
     private NativeList<T> listA;
     private NativeList<T> listB;
 
-    internal DoubleArrayBuffer(int capacity)
+    internal DoubleListBuffer(int capacity)
     {
         useWriteBuffer = true;
         listA = new NativeList<T>(capacity, Allocator.Persistent);
